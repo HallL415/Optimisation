@@ -321,6 +321,7 @@ print(P)
 
 
 
+#region 
 
 
 
@@ -1071,3 +1072,5 @@ V[0, even_indices] *= 3
 
 # Multiply elements at odd indices by 4
 V[0, ~even_indices] *= 4
+
+#endregion
