@@ -5,25 +5,6 @@ Created on Fri Mar  8 20:09:00 2024
 @author: Luke
 """
 import numpy as np
-
-
-
-
-Qmatrix=[]
-Qmatrix.append(np.array([[1,2],[3,4]]))
-Qmatrix.append(np.array([[1,1],[1,1]]))
-Qlist=Qmatrix
-
-
-
-
-
-U = np.array([[1], [1], [1], [1]])  # 4x1 column matrix
-delta = np.array([[1]])             # 1x1 matrix (scalar)
-V = np.array([[1, 1, 1, 1]])        # 1x4 row matrix
-
-#######################################
-#%%
 import itertools
 from functions_ps import DiagM, Kbb2
 import parameters_ps as pp
@@ -40,14 +21,6 @@ J0=pp.J0
 w0=pp.w0
 T=pp.T
 tauib=3.25
-
-
-
-
-
-
-
-
 
 
 
@@ -110,12 +83,14 @@ def create_ones_row(n):
 def rotate(l, n):
      return l[n:] + l[:n]#
 
-length = L/2
 
-n=int(2**((L/2)))
-permutation_generator = generate_permutations(int(length))  # Ensure length is converted to an integer
+# L=10
+# length = L/2
 
-step_no = 1
+# n=int(2**((L/2)))
+# permutation_generator = generate_permutations(int(length))  # Ensure length is converted to an integer
+
+# step_no = 2
 def get_nth_permutation(generator):
     permutation_generator = generate_permutations(int(length))  # Ensure length is converted to an integer
     U = create_ones_column(n) + 0j
@@ -273,27 +248,64 @@ def get_nth_permutation(generator):
             U_row = U[U_val2, :]
             
             
-            
+##################  P should be full calculation equivalent ##############            
     # print('U_row:', U_row, 'V_column:', V_column)
     P = np.abs(np.exp(cumulants[0])*(np.dot(U_row,V_column)))
     
-    matrix = np.matmul(U,V)
-    U1, S1, Vt1 = np.linalg.svd(matrix)
-    # U = U1[:, :-1]
-    # V = U1[:-1, :]
-    # S = S1[:-1]
-    U = U1[:, :]
-    V = U1[:, :]
-    S = S1[:]
-    P2 = np.abs(np.exp(cumulants[0])*(np.dot(U[-1, :]*S, V[:, V_val2])))
-    print(P, P2)
-    # Vtilde0_p0,Vtilde0_p1= Vtilde0*Qlist[-1][0,0],Vtilde0*Qlist[-1][1,0],Vtilde1*Qlist[-1][0,0],Vtilde1*Qlist[-1][1,0]
-    return  U, V, P
+ ################### SVD taking all diagonals #################
+    U1, S1, Vt1 = np.linalg.svd(V, full_matrices=False)
+    
+    k=len(S1)
+    U1 = U1[:, :k]
+    S1 = np.diag(S1[:k])
+    Vt1 = Vt1[:k, :]
 
-L=4
+    print('U1 shape:',np.shape(U1))
+    print('S1 shape:', np.shape(S1))
+    print('Vt1 shape:', np.shape(Vt1))
+    Vnew=np.dot(U1, np.dot(S1, Vt1))
+    print('Vnew shape:', np.shape(Vnew))
+
+    P2 = np.abs(np.exp(cumulants[0])*(np.dot(U[-1, :], Vnew[:, V_val2])))
+
+########## SVD reducing contributions ##############
+    A, S, Vt2 = np.linalg.svd(V, full_matrices=False)
+    k=4
+    A = A[:, :k]
+    S = np.diag(S[:k])
+    Vt2 = Vt2[:k, :]
+
+    print('U original shape:',np.shape(U))
+    print('V original shape:', np.shape(V))
+    
+    print('A shape:',np.shape(A))
+    print('S shape:', np.shape(S))
+    print('Vt2 shape:', np.shape(Vt2))
+    Vnew2=np.dot(A, np.dot(S, Vt2))
+    print('Vnew2 shape:', np.shape(Vnew2))
+    
+    P3= np.abs(np.exp(cumulants[0])*(np.dot(U[-1, :], Vnew2[:, V_val2])))
+    P3= np.abs(np.exp(cumulants[0])*(np.dot( (U @ A @ S)[-1,:], Vt2[:,V_val2])))
+    
+
+    #### Thinking perhaps when no. of rows in V reaches 1024 which is then dimension 1024 x 2^(L/2), 
+    #   after 10 time steps, we then apply SVD on V, reduce to let's say 8 rows
+    #multiply the U of 2^(L/2) x 1024 by  1024 x 8 matrix A, and 8x8 matrix lambda, giving U of dimension 2^(L/2) by 8. 
+    #continue the procedure as usual, until dimensions reach 1024 again, reduce back to 8, repeat.
+    #Note that using 1024 is effectively waiting for 2^10 elements more, equivalent to L=10, to reach larger L we need to SVD more frequently 
+    #at the cost of speed, implemenet this as a parameter.
+
+
+    print('Working full calc. with no SVD: \n',P )
+    print('calc attempting full SVD:\n',P2 )
+    print('calc attempting reduced SVD:\n',P3 )
+
+    # Vtilde0_p0,Vtilde0_p1= Vtilde0*Qlist[-1][0,0],Vtilde0*Qlist[-1][1,0],Vtilde1*Qlist[-1][0,0],Vtilde1*Qlist[-1][1,0]
+    return  U, V, P, P2, P3
+
+L=10
 
 tauib=3.25
-
 dt=1.2*tauib/(L+1)
 D, ww, U1, V1 = DiagM(g, wx, gx, gc, det, omp)
 DD = np.diag(np.exp(-1j*ww*dt))
@@ -308,20 +320,21 @@ for i in range(int(L-1)):
     Qlist.append(np.array([[np.exp(2*cumulants[i+2]), 1 ],[1, 1]]))
 
 
-step_no =1
+step_no =6
 length = L/2
 n=int(2**((L/2)))
-U, V, P = get_nth_permutation(permutation_generator)
+U, V, P, P2, P3 = get_nth_permutation(permutation_generator)
 
 # P_max=np.abs(np.exp(cumulants[0])*(np.dot(U[-2, : ],V[:,-1])))
 
-print(np.abs(Pnf[step_no+1]))
-print(P)
+print(f'The full calculation for L={L} for the given tstep is:\n', np.abs(Pnf[step_no+1]))
+print(f'The calculation for L={L} for the given tstep is:\n', P)
+print(f'The SVD calculation for L={L} for the given tstep is:\n', P2)
 
 
 
 
-#region 
+
 
 
 
@@ -1072,5 +1085,3 @@ V[0, even_indices] *= 3
 
 # Multiply elements at odd indices by 4
 V[0, ~even_indices] *= 4
-
-#endregion
