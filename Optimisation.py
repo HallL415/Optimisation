@@ -216,7 +216,7 @@ def get_nth_permutation(generator):
                                 
         V = np.vstack((V_i0, V_i1))
         U = np.hstack((U0,U1))
-
+        print(f'for {step+1} the shape of V is:\n', np.shape(V))
         ii += 1
         # print('ii', ii)
         if ii % (L/2) == 0:
@@ -247,46 +247,32 @@ def get_nth_permutation(generator):
                     U_val2 = U_val2[U_val]
             U_row = U[U_val2, :]
             
-            
-##################  P should be full calculation equivalent ##############            
-    # print('U_row:', U_row, 'V_column:', V_column)
+        if (step+1) % 10 ==0:
+          A, S, Vt2 = np.linalg.svd(V, full_matrices=False)
+          k=8
+          A = A[:, :k]
+          S = np.diag(S[:k])
+          Vt2 = Vt2[:k, :]
+      
+          # print('U original shape:',np.shape(U))
+          # print('V original shape:', np.shape(V))
+          
+          # print('A shape:',np.shape(A))
+          # print('S shape:', np.shape(S))
+          # print('Vt2 shape:', np.shape(Vt2))
+          # Vnew2=np.dot(A, np.dot(S, Vt2))
+          # print('Vnew2 shape:', np.shape(Vnew2))
+          
+          # P3= np.abs(np.exp(cumulants[0])*(np.dot(U[-1, :], Vnew2[:, V_val2])))
+          U= U @ A @ S
+          V= Vt2  
+          print('entered SVD part')
+          P3= np.abs(np.exp(cumulants[0])*(np.dot( (U)[-1,:], V[:,V_val2])))
+         
+          
     P = np.abs(np.exp(cumulants[0])*(np.dot(U_row,V_column)))
-    
- ################### SVD taking all diagonals #################
-    U1, S1, Vt1 = np.linalg.svd(V, full_matrices=False)
-    
-    k=len(S1)
-    U1 = U1[:, :k]
-    S1 = np.diag(S1[:k])
-    Vt1 = Vt1[:k, :]
-
-    print('U1 shape:',np.shape(U1))
-    print('S1 shape:', np.shape(S1))
-    print('Vt1 shape:', np.shape(Vt1))
-    Vnew=np.dot(U1, np.dot(S1, Vt1))
-    print('Vnew shape:', np.shape(Vnew))
-
-    P2 = np.abs(np.exp(cumulants[0])*(np.dot(U[-1, :], Vnew[:, V_val2])))
 
 ########## SVD reducing contributions ##############
-    A, S, Vt2 = np.linalg.svd(V, full_matrices=False)
-    k=4
-    A = A[:, :k]
-    S = np.diag(S[:k])
-    Vt2 = Vt2[:k, :]
-
-    print('U original shape:',np.shape(U))
-    print('V original shape:', np.shape(V))
-    
-    print('A shape:',np.shape(A))
-    print('S shape:', np.shape(S))
-    print('Vt2 shape:', np.shape(Vt2))
-    Vnew2=np.dot(A, np.dot(S, Vt2))
-    print('Vnew2 shape:', np.shape(Vnew2))
-    
-    P3= np.abs(np.exp(cumulants[0])*(np.dot(U[-1, :], Vnew2[:, V_val2])))
-    P3= np.abs(np.exp(cumulants[0])*(np.dot( (U @ A @ S)[-1,:], Vt2[:,V_val2])))
-    
 
     #### Thinking perhaps when no. of rows in V reaches 1024 which is then dimension 1024 x 2^(L/2), 
     #   after 10 time steps, we then apply SVD on V, reduce to let's say 8 rows
@@ -297,13 +283,12 @@ def get_nth_permutation(generator):
 
 
     print('Working full calc. with no SVD: \n',P )
-    print('calc attempting full SVD:\n',P2 )
     print('calc attempting reduced SVD:\n',P3 )
 
     # Vtilde0_p0,Vtilde0_p1= Vtilde0*Qlist[-1][0,0],Vtilde0*Qlist[-1][1,0],Vtilde1*Qlist[-1][0,0],Vtilde1*Qlist[-1][1,0]
-    return  U, V, P, P2, P3
+    return  U, V, P, P3
 
-L=10
+L=6
 
 tauib=3.25
 dt=1.2*tauib/(L+1)
@@ -320,16 +305,43 @@ for i in range(int(L-1)):
     Qlist.append(np.array([[np.exp(2*cumulants[i+2]), 1 ],[1, 1]]))
 
 
-step_no =6
+step_no =14
 length = L/2
 n=int(2**((L/2)))
-U, V, P, P2, P3 = get_nth_permutation(permutation_generator)
+U, V, P, P3 = get_nth_permutation(permutation_generator)
 
 # P_max=np.abs(np.exp(cumulants[0])*(np.dot(U[-2, : ],V[:,-1])))
 
 print(f'The full calculation for L={L} for the given tstep is:\n', np.abs(Pnf[step_no+1]))
 print(f'The calculation for L={L} for the given tstep is:\n', P)
-print(f'The SVD calculation for L={L} for the given tstep is:\n', P2)
+print(f'The SVD calculation for L={L} for the given tstep is:\n', P3)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -426,10 +438,6 @@ Utilde0,Utilde1,V_p0,V_p1=get_nth_permutation(permutation_generator)
 P2nd=np.abs(np.exp(cumulants[0])*(Utilde0[-1]*V_p1[0][0] + Utilde1[-1]* V_p1[0][1]))
 print('Pnf', np.abs(Pnf[2]))
 Pnf2=np.abs(Pnf)
-
-
-#%%
-###########################################################################################################################################
 
 
 length = L/2
@@ -611,7 +619,7 @@ Vcorrect1=V_p1
 
 def rotate(l, n):
      return l[n:] + l[:n]#
-
+#%% weird stuff
 length = L/2
 
 n=int(2**((L/2)))
@@ -789,7 +797,7 @@ U, V, P = get_nth_permutation(permutation_generator)
 print(np.abs(Pnf[step_no+1]))
 print(P)
 
-#%%
+
 permutation_generator = generate_permutations(int(length))  # Ensure length is converted to an integer
 n=int(2**((L/2)))  
 U0=U_combined.copy()
@@ -883,44 +891,6 @@ print(P3rd)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#%%
 length = L/2
 permutation_generator = generate_permutations(int(length))  # Ensure length is converted to an integer
 n=int(2**((L/2)))
@@ -1006,6 +976,7 @@ P3rd_2=np.abs(np.exp(cumulants[0])*(Utilde00[-1]*V_p01[0][0] +Utilde00[-1]*V_p11
 print(P3rd)
 print(P3rd_2)
 print(np.abs(Pnf[3]))
+#%%
 
 
 
@@ -1034,54 +1005,3 @@ print(np.abs(Pnf[3]))
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Get the third permutation
-# third_permutation = get_nth_permutation(permutation_generator, 3)
-# print("Third permutation:", third_permutation)
-for j in range(int((L/2))):
-    print(j)
-
-for i in range(n):
-    permutation=next(permutation_generator )
-    print(permutation)
-    
-    
-    
-    
-    
-    
-    
-Vtilde0 = np.ones((6,))
-
-# Create an array of ones of the same shape as Vtilde0
-ones_array = np.ones_like(Vtilde0)
-
-# Select indices [0], [2], [4], ... and replace with 2s
-ones_array[::2] = 2    
-    
-    
-    
-Vtilde0 = create_ones_row(n)
-even_indices = np.arange(V.shape[1]) % 2 == 0
-
-# Multiply elements at even indices by 3
-V[0, even_indices] *= 3
-
-# Multiply elements at odd indices by 4
-V[0, ~even_indices] *= 4
