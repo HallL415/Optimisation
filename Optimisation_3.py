@@ -12,6 +12,7 @@ import LP_xc_past_future_original as original
 import time
 import matplotlib.pyplot as plt
 import sys
+from tqdm import tqdm 
 
 wx=pp.wx
 gx=pp.gx
@@ -25,11 +26,16 @@ w0=pp.w0
 T=pp.T
 L=pp.L
 tauib=3.25
-
-Pnf_orig = original.Pnf
-tpsf_orig = original.tpsf
-
-
+if L<27:
+    Lprime=L
+    Pnf_orig = original.Pnf
+    tpsf_orig = original.tpsf
+if L>26:
+    L=20
+    Lprime=L
+    Pnf_orig = original.Pnf
+    tpsf_orig = original.tpsf
+    L=pp.L
 
 class Cumulants(object):
     """a set of functions to run numerics"""
@@ -105,7 +111,7 @@ def get_nth_permutation():
     S2 = []
     
     
-    for step in range(step_no):
+    for step in tqdm(range(step_no),position=0, leave=True):
         
         i_values = {}
         i_values_U = {}
@@ -118,10 +124,8 @@ def get_nth_permutation():
         else: 
             indices2 = np.roll(indices2, -1)
         
-        
         U_indices = indices2[:int(L/2)]
         V_indices = indices2[int(L/2):]
-        
         i1_pos = np.where(V_indices == '1')[0][0] # location of i1 in permutation order
         
         # permutations = ['' for i in np.zeros(2**int(length))]
@@ -150,7 +154,8 @@ def get_nth_permutation():
         #     # order in V matrices for each of the i=0 and i=1 rows eg. the zeroth element of the i=0 V matrix corresponds to Vp1[V_perm_order[0]]
         #     V_perm_order0.append(np.where(np.array(permutations) == permutations0[i])[0][0]) #can include this in above loop so as to not store permutation0 and 1
         #     V_perm_order1.append(np.where(np.array(permutations) == permutations1[i])[0][0])
-        
+        print(f"\n Step0 before first loop: {np.round((time.time() - start_time), 2)} seconds")
+
         permutations = ['' for i in np.zeros(2**int(length))]
         V_perm_order0 = []
         V_perm_order1 = []
@@ -159,8 +164,10 @@ def get_nth_permutation():
             permutation = list(next(generator))
             for ss, sss in enumerate(permutation):
                 permutations[i] = permutations[i] + f"{sss}"
+        # print(f"\n after generating all permutations and storing them: {np.round((time.time() - start_time), 2)} seconds") #takes barely any time
 
-        for i in range(n):
+####################################### Problematic region for time ######################################################
+        for i in range(n):  #n is number of permutations
             permutations0 = ''
             permutations1 = ''
             permutation = permutations[i]
@@ -169,20 +176,20 @@ def get_nth_permutation():
                     permutations0 = permutations0 + "0" 
                     permutations1 = permutations1 + "1"
                     
-                else: # the remaining values of the perturbation remain the same (only i is swapped with p)
+                else: # the remaining values of the permutation remain the same (only i is swapped with p)
                     permutations0 = permutations0 + f"{sss}"
                     permutations1 = permutations1 + f"{sss}"
             # order in V matrices for each of the i=0 and i=1 rows eg. the zeroth element of the i=0 V matrix corresponds to Vp1[V_perm_order[0]]
             V_perm_order0.append(np.where(np.array(permutations) == permutations0)[0][0]) #can include this in above loop so as to not store permutation0 and 1
             V_perm_order1.append(np.where(np.array(permutations) == permutations1)[0][0])
-        print(f"Step1: {np.round((time.time() - start_time), 2)} seconds")
+        print(f"\n  Step1: after Arsenis' addition {np.round((time.time() - start_time), 2)} seconds")
         # sys.getsizeof(permutations0) # check size of permutation lists
         '''
         In the above we're creating a list of permutations for each of the i columns. For example for the i = 0 and (i3, i2, p) = (0, 0, 0) element
         one has to simply extract the (i3, i2, i1) = (0, 0, 0) of the Vp0 matrix
         '''
         
-        
+ ##########################################################################################################################       
         generator = generate_permutations(int(length))  # Ensure length is converted to an integer
         if cycle == 0:
             indices2 = indices #when new cycle begins reset indices
@@ -231,7 +238,7 @@ def get_nth_permutation():
         V_p0 = V.copy()
         V_p1 = V.copy()
         
-        print(f"Step1: {np.round((time.time() - start_time), 2)} seconds")
+        # print(f"Step1: {np.round((time.time() - start_time), 2)} seconds")
         for i in range(n):
             if i_values['1'][i] == 0:
                 V_p0[:, i] *= Qlist[-1][0,0]
@@ -240,12 +247,12 @@ def get_nth_permutation():
                 V_p0[:, i] *= Qlist[-1][0,1]
                 V_p1[:, i] *= Qlist[-1][1,1]
         
-        print(f"Step2: {np.round((time.time() - start_time), 2)} seconds")
+        print(f"\n Step2 after applying Qs to U and V: {np.round((time.time() - start_time), 2)} seconds")
         #reconstruct V to have i1=0 as the first row and i1=1 for the next, p varies across columns
         
         V_i0 = np.reshape(np.ones(sum(len(row) for row in V_p0)), np.shape(V_p0)) + 0j
         V_i1 = np.reshape(np.ones(sum(len(row) for row in V_p0)), np.shape(V_p0)) + 0j
-        print(f"Step3: {np.round((time.time() - start_time), 2)} seconds")
+        # print(f"Step3: {np.round((time.time() - start_time), 2)} seconds")
         
         
         # start_time = time.time()
@@ -303,7 +310,7 @@ def get_nth_permutation():
                 V_i0[:, i] = V_p1[:, V_perm_order0[i]]
                 V_i1[:, i] = V_p1[:, V_perm_order1[i]]
                 
-        print(f"Step4: {np.round((time.time() - start_time), 2)} seconds")                     
+        # print(f"Step4: {np.round((time.time() - start_time), 2)} seconds")                     
         V = np.vstack((V_i0, V_i1))
         U = np.hstack((U0,U1))
         # print(f'for {step+1} the shape of V is:\n', np.shape(V))
@@ -314,7 +321,8 @@ def get_nth_permutation():
             
         i2_pos_V = np.where(V_indices == '2')[0]
         i2_pos_U = np.where(U_indices == '2')[0]
-        
+     
+
         if len(i2_pos_V) == 0:
             V_column = V[:,-1] # choose the (1, 1) column which is the final one
         else:
@@ -335,19 +343,39 @@ def get_nth_permutation():
                 if i_index != '2':
                     U_val =  np.where(np.array(i_values_U[f'{i_index}'])[U_val2] == 1)[0]
                     U_val2 = U_val2[U_val]
-            U_row = U[U_val2, :]
-            
-        # if (step+1) % 10 ==0:
-        if V.shape[0] == 64:
-            A, S, Vt2 = np.linalg.svd(V, full_matrices=False)
-            k=int(V.shape[0]/2)
-            # k = 8
-            S2.append(S)
-            A = A[:, :k]
-            S = np.diag(S[:k])
-            Vt2 = Vt2[:k, :]
+            U_row = U[U_val2, :]  
+        print(f"\n Step3 Finding which indices to extract for calc: {np.round((time.time() - start_time), 2)} seconds")
         
-            # print('U original shape:',np.shape(U))
+        if (step+1) % 1 ==0:
+        # if V.shape[0] >= 512:
+            ############################## Removing only contributions 1e-3 of the maximum S value every 2 timesteps.
+            print('\n V rows before truncation:', V.shape[0])
+            A, S, Vt2 = np.linalg.svd(V, full_matrices=False)
+            threshold = S[0] * 1e-6
+            thresh = np.where(S > threshold)[0]
+            S= S[thresh]
+            print('S size:',np.shape(S))
+            S2.append(S)
+            A= A[:, thresh]
+            Vt2 = Vt2[thresh, :]
+            S=np.diag(S)
+            print('\n V rows after truncation:', Vt2.shape[0])
+
+            # print('S shape:',np.shape(S))
+            # print('A shape:',np.shape(A))
+            # print(' \n U original shape:',np.shape(U))
+
+            
+            ##############################
+            # A, S, Vt2 = np.linalg.svd(V, full_matrices=False)
+            # k=int(V.shape[0]/2)
+            # # k = 64
+            # S2.append(S)
+            # A = A[:, :k]
+            # S = np.diag(S[:k])
+            # Vt2 = Vt2[:k, :]
+        
+            # print(' \n U original shape:',np.shape(U))
             # print('V original shape:', np.shape(V))
             
             # print('A shape:',np.shape(A))
@@ -359,14 +387,16 @@ def get_nth_permutation():
             # P3= np.abs(np.exp(cumulants[0])*(np.dot(U[-1, :], Vnew2[:, V_val2])))
             U= U @ A @ S
             V= Vt2  
-            print('entered SVD part')
+            # print('entered SVD part')
             P3= np.abs(np.exp(cumulants[0])*(np.dot( (U)[-1,:], V[:,V_val2])))
+            print(f"\n Step4 SVD application: {np.round((time.time() - start_time), 2)} seconds")
+
             
         
-        print(f"Step {step+1}: {np.round((time.time() - start_time), 2)} seconds")
+        # print(f"Step {step+1}: {np.round((time.time() - start_time), 2)} seconds")
         P.append(np.abs(np.exp(cumulants[0])*(np.dot(U_row,V_column))))
         
-    print(f"For L = {L} and {step_no} steps, code took {np.round((time.time() - start_time)/60, 2)} minutes to run")   
+    print(f" \n For L = {L} and {step_no} steps, code took {np.round((time.time() - start_time)/60, 2)} minutes to run or {np.round((time.time() - start_time),2)} seconds ")   
     # P_final = np.abs(np.exp(cumulants[0])*(np.dot(U_row,V_column)))
 
 ########## SVD reducing contributions ##############
@@ -402,8 +432,8 @@ for i in range(int(L-1)):
     Qlist.append(np.array([[np.exp(2*cumulants[i+2]), 1 ],[1, 1]]))
 
 
-
-step_no = 50
+tfinal=50
+step_no = int(tfinal/dt)
 length = L/2
 n=int(2**((L/2)))
 U, V, P, P3, S2 = get_nth_permutation()
@@ -416,23 +446,23 @@ times = np.array([dt*i for i in range(step_no+2)])
 # P_max=np.abs(np.exp(cumulants[0])*(np.dot(U[-2, : ],V[:,-1])))
 
 # print(f'The full calculation for L={L} for the given tstep is:\n', np.abs(Pnf[step_no+1]))
-print(f'The calculation for L={L} for the given tstep is:\n', P[-1])
-print(f'The SVD calculation for L={L} for the given tstep is:\n', np.abs(Pnf_orig[step_no+1]))
+# print(f'The calculation for L={L} for the given tstep is:\n', P[-1])
+# print(f'The SVD calculation for L={L} for the given tstep is:\n', np.abs(Pnf_orig[step_no+1]))
 
 
 
 fig1 = plt.figure(10, figsize=(6,6),dpi=150)
 # bb.set_title(fr'L={L}')
-plt.plot(tpsf_orig, abs(Pnf_orig), 'b', linewidth='1', label=f'original, L={L}')
+plt.plot(tpsf_orig, abs(Pnf_orig), 'b', linewidth='1', label=f'original, L={Lprime}')
 plt.plot(times[2:], P, 'r--', linewidth='1', label=f'SVD, L={L}')
 
 plt.legend(loc='best') 
 
 
-# for i in range(10, 20):
-#     fig1 = plt.figure(figsize=(6,6))
+# for i in range(0,len(S2)):
+#     fig1 = plt.figure(11,figsize=(6,6))
 #     plt.plot(S2[i], 'b')
-#     # plt.yscale("log")
+#     plt.yscale("log")
 #     plt.legend(loc='best') 
 
 
