@@ -287,21 +287,21 @@ def get_nth_permutation():
             for j in range(int(L/2)): #This is how many elements are in a specific permutation, L=6 -> 000,001,...  L/2 elements
                 #looping to select each element of e.g (i6i5i4 -> 001 -> check if it's 0 or 1 at each position)   
                 index=permutation[j]
-                Q0_U=Q0_U*Qlist[int(L)-j-2-ii][index,0] #Qlist contains matrices ([[e^2K_r, 1],[ 1, 1]]) and K_r depends on the timestep i_n, so i6i5i4 should use the latter 3 elements of Qlist
-                Q1_U=Q1_U*Qlist[int(L)-j-2-ii][index,1] #see notes why splitting into 0 and 1
+                Q0_U*=Qlist[int(L)-j-2-ii][index,0] #Qlist contains matrices ([[e^2K_r, 1],[ 1, 1]]) and K_r depends on the timestep i_n, so i6i5i4 should use the latter 3 elements of Qlist
+                Q1_U*=Qlist[int(L)-j-2-ii][index,1] #see notes why splitting into 0 and 1
                 # i1_pos = np.where(V_indices == '1')[0][0]
                 if V_indices[j] != '1': #because we multiply less Qs onto V than U (excluding p index)
                     if permutation[i1_pos]==0:
-                        QV=QV*Qlist[int(V_indices[j]) - 2][index,0] #same done for V, except V takes Q_iL/2 l ...Qi2l as the Qs to multiply in
+                        QV*=Qlist[int(V_indices[j]) - 2][index,0] #same done for V, except V takes Q_iL/2 l ...Qi2l as the Qs to multiply in
                         # print(QV)
                     else:
-                        QV=QV*Qlist[int(V_indices[j]) - 2][index,1]
+                        QV*=Qlist[int(V_indices[j]) - 2][index,1]
                         # print(QV)
                         
-            U0[i, :]=Q0_U*U0[i, :] # multiplying the product of Qs into Us elements appropriately
-            U1[i, :]=Q1_U*U1[i, :]
+            U0[i, :]*=Q0_U # multiplying the product of Qs into Us elements appropriately
+            U1[i, :]*=Q1_U
            
-            V[:, i]=QV*V[:, i]  ###change
+            V[:, i]*=QV  ###change
             
         V_p0 = V.copy()
         V_p1 = V.copy()
@@ -499,7 +499,7 @@ for i in range(int(L-1)):
     Qlist.append(np.array([[np.exp(2*cumulants[i+2]), 1 ],[1, 1]]))
 
 
-tfinal=150
+tfinal=20
 step_no = int(tfinal/dt)
 # step_no = 5
 length = L/2
