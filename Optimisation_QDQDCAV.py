@@ -192,8 +192,12 @@ def get_nth_permutation():
 ################################################# new addition
         V_perm_order0 = np.ones(int(n))
         V_perm_order1= np.ones(int(n))
-        value = 0 # start position value for the i=0 row
-        value2 = 2**(ii) # start position value for the i=1 row
+        V_perm_order2 = np.ones(int(n))
+
+        value = 0 # start position value for the i1=0 row
+        value2 = 3**(ii) # start position value for the i1=1 row
+        value3 = 2*3**(ii) # start position value for the i1=2 row
+
         fill = 0 # position of the perturbation in the new V array (in terms of p-values)
         while fill + int(2**(ii)) < n: # int(2**(ii)) corresponds to the position of the same perturbation as fill but with a different p-value
             if fill == 0:
@@ -426,12 +430,6 @@ if sharebath ==0:
 LF=LFpol(g1, g2,gd, w_qd1, w_qd2, w_c)
 M1=expm(-1j*LF*dt)
 cumulants,cumulants_inin=Cumulants().cu(L,dt)
-
-Q0=np.array([[M1[0,0]*np.exp(cumulants[0] +2*cumulants[1]), M1[0,1] ],[M1[1,0]*np.exp(cumulants[0]), M1[1,1]]])
-Qlist=[]
-Qlist.append(Q0)
-for i in range(int(L-1)):
-    Qlist.append(np.array([[np.exp(2*cumulants[i+2]), 1 ],[1, 1]]))
 
 
 Q0=np.array([[M1[0,0]*np.exp(cumulants_inin[0] +2*cumulants_inin[1]), M1[0,1]*np.exp(cumulants_inin[0] +2*cumulants[1]), M1[0,2] ],
