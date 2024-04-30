@@ -199,34 +199,50 @@ def get_nth_permutation():
         value3 = 2*3**(ii) # start position value for the i1=2 row
 
         fill = 0 # position of the perturbation in the new V array (in terms of p-values)
-        while fill + int(2**(ii)) < n: # int(2**(ii)) corresponds to the position of the same perturbation as fill but with a different p-value
+        while fill + int(2 * 3**(ii)) < n: # int(2**(ii)) corresponds to the position of the same perturbation as fill but with a different p-value
             if fill == 0:
                 V_perm_order0[fill] = value # effectively saying that at position [fill], the perturbation should be filled in with the perturbation in position [value] of the old array
-                V_perm_order0[fill + int(2**(ii))] = value
+                V_perm_order0[fill + int(3**(ii))] = value
+                V_perm_order0[fill + int(2 * 3**(ii))] = value
                 
                 V_perm_order1[fill] = value2
-                V_perm_order1[fill + int(2**(ii))] = value2
-                fill += 1
+                V_perm_order1[fill + int(3**(ii))] = value2
+                V_perm_order1[fill + int(2* 3**(ii))] = value2
+                
+                V_perm_order2[fill] = value3
+                V_perm_order2[fill + int(3**(ii))] = value3
+                V_perm_order2[fill + int(2* 3**(ii))] = value3
+                
+                fill += 2
             else:
                 
-                if fill % (2**(ii)) == 0:
-                    fill += 2**(ii)
+                if fill % (3**(ii)) == 0:
+                    fill += 3**(ii)
                 else:
                     pass  
                 
-                if (fill) % (2**(ii)) == 0: # ii gives the number of times the indeces have shifted (happens every time step)
-                    value += int(2**(ii) + 1)
-                    value2 += int(2**(ii) + 1)
+                if (fill) % (3**(ii)) == 0: # ii gives the number of times the indeces have shifted (happens every time step)
+                    value += int(3**(ii) + 2)
+                    value2 += int(3**(ii) + 2)
+                    value3 += int(3**(ii) + 2)
                 else:
                     value += 1
                     value2 += 1
+                    value2 += 1
                     
                 V_perm_order0[fill] = int(value)
-                V_perm_order0[fill + int(2**(ii))] = int(value)
+                V_perm_order0[fill + int(3**(ii))] = int(value)
+                V_perm_order0[fill + int(2 * 3**(ii))] = int(value)
                 
                 V_perm_order1[fill] = int(value2)
-                V_perm_order1[fill + int(2**(ii))] = int(value2)
-                fill += 1
+                V_perm_order1[fill + int(3**(ii))] = int(value2)
+                V_perm_order1[fill + int(2 * 3**(ii))] = int(value2)
+                
+                V_perm_order2[fill] = int(value3)
+                V_perm_order2[fill + int(3**(ii))] = int(value3)
+                V_perm_order2[fill + int(2 * 3**(ii))] = int(value3)
+                
+                fill += 2
                 
          
             
@@ -239,12 +255,13 @@ def get_nth_permutation():
             if step != 0:
                 U0 = V.copy().T
                 U1 = V.copy().T
+                U2 = V.copy().T
                 V = U.T
                 
         i_pos = np.ones(len(V_indices))
         i_pos_U = np.ones(len(V_indices))
         
-        
+        # print(np.max(U0), np.max(U1), np.max(U2))
         Q0_U=np.ones(n)+0j #We want to generate the appropriate product of Q matrix elements, starting from 1 then multiplying in the loop
         Q1_U=np.ones(n)+0j
         Q2_U=np.ones(n)+0j
@@ -262,15 +279,19 @@ def get_nth_permutation():
             
             Q0_U*=Qlist[int(L)-j-2-ii][index,0] #Qlist contains matrices ([[e^2K_r, 1],[ 1, 1]]) and K_r depends on the timestep i_n, so i6i5i4 should use the latter 3 elements of Qlist
             Q1_U*=Qlist[int(L)-j-2-ii][index,1] #see notes why splitting into 0 and 1
+            Q2_U*=Qlist[int(L)-j-2-ii][index,2]
             
             if V_indices[j] != '1':
                 
                 # QV *= np.array([Qlist[int(V_indices[j]) - 2][index[i],0] if permutations[i][i1_pos]==0 else Qlist[int(V_indices[j]) - 2][index[i],1] for i in range(n)])
                 
                 # instead of the if statement above and the loop use positions through True and False values
-                true_false_array = permutations[:, i1_pos]==0 # positions where i1 is zero
-                QV[true_false_array] *= Qlist[int(V_indices[j]) - 2][np.array(index)[true_false_array],0]
-                QV[np.logical_not(true_false_array)] *= Qlist[int(V_indices[j]) - 2][np.array(index)[np.logical_not(true_false_array)],1] # np.logical_not swaps true and false
+                true_false_array_0 = permutations[:, i1_pos]==0 # positions where i1 is zero
+                true_false_array_1 = permutations[:, i1_pos]==1 # positions where i1 is one
+                true_false_array_2 = permutations[:, i1_pos]==2 # positions where i1 is two
+                QV[true_false_array_0] *= Qlist[int(V_indices[j]) - 2][np.array(index)[true_false_array_0],0]
+                QV[true_false_array_1] *= Qlist[int(V_indices[j]) - 2][np.array(index)[true_false_array_1],1]
+                QV[true_false_array_2] *= Qlist[int(V_indices[j]) - 2][np.array(index)[true_false_array_2],2]
 
             i_values[f'{V_indices[j]}'] = permutations[:, int(i_pos[j])]
             i_values_U[f'{U_indices[j]}'] = permutations[:, int(i_pos_U[j])]
@@ -330,19 +351,26 @@ def get_nth_permutation():
             if permutations[i, :][i1_pos] == 0: # effectively if p == 0 for this permutation
                 V_i0[:, i] = V_p0[:, int(V_perm_order0[i])]
                 V_i1[:, i] = V_p0[:, int(V_perm_order1[i])]
-            else:
+                V_i2[:, i] = V_p0[:, int(V_perm_order2[i])]
+            elif permutations[i, :][i1_pos] == 1:
                 V_i0[:, i] = V_p1[:, int(V_perm_order0[i])]
                 V_i1[:, i] = V_p1[:, int(V_perm_order1[i])]
-        
+                V_i2[:, i] = V_p1[:, int(V_perm_order2[i])]
+            else:
+                V_i0[:, i] = V_p2[:, int(V_perm_order0[i])]
+                V_i1[:, i] = V_p2[:, int(V_perm_order1[i])]
+                V_i2[:, i] = V_p2[:, int(V_perm_order2[i])]    
         
         # print(f"Step4: {np.round((time.time() - start_time), 2)} seconds")                     
-        V = np.vstack((V_i0, V_i1))
+        V = np.vstack((V_i0, V_i1, V_i2))
        
         
         V_i0=[]
         V_i1=[]
+        V_i2=[]
         V_p0=[]
         V_p1=[]
+        V_p2=[]
         # print(f'for {step+1} the shape of V is:\n', np.shape(V))
         ii += 1
         # print('ii', ii)
@@ -360,7 +388,7 @@ def get_nth_permutation():
             V_val2 = V_val
             for i_index in V_indices:
                 if i_index != '2':
-                    V_val =  np.where(np.array(i_values[f'{i_index}'])[V_val2] == 1)[0]
+                    V_val =  np.where(np.array(i_values[f'{i_index}'])[V_val2] == 2)[0]
                     V_val2 = V_val2[V_val]
             V_column = V[:, V_val2]        
             
@@ -371,7 +399,7 @@ def get_nth_permutation():
             U_val2 = U_val
             for i_index in U_indices:
                 if i_index != '2':
-                    U_val =  np.where(np.array(i_values_U[f'{i_index}'])[U_val2] == 1)[0]
+                    U_val =  np.where(np.array(i_values_U[f'{i_index}'])[U_val2] == 2)[0]
                     U_val2 = U_val2[U_val]
             U_row = U[U_val2, :]  
         # print(f"\n Step3 Finding which indices to extract for calc: {np.round((time.time() - start_time), 2)} seconds")
@@ -410,7 +438,7 @@ def get_nth_permutation():
             
         
         # print(f"Step {step+1}: {np.round((time.time() - start_time), 2)} seconds")
-        P.append(np.abs(np.exp(cumulants[0])*(np.dot(U_row,V_column))))
+        P.append(np.abs(np.exp(cumulants_inin[0])*(np.dot(U_row,V_column))))
         
     print(f" \n For L = {L} and {step_no} steps, code took {np.round((time.time() - start_time)/60, 2)} minutes to run or {np.round((time.time() - start_time),2)} seconds ")   
     # P_final = np.abs(np.exp(cumulants[0])*(np.dot(U_row,V_column)))
@@ -434,15 +462,13 @@ cumulants,cumulants_inin=Cumulants().cu(L,dt)
 
 Q0=np.array([[M1[0,0]*np.exp(cumulants_inin[0] +2*cumulants_inin[1]), M1[0,1]*np.exp(cumulants_inin[0] +2*cumulants[1]), M1[0,2] ],
              [M1[1,0]*np.exp(cumulants_inin[0] +2*cumulants[1]), M1[1,1]*np.exp(cumulants_inin[0] +2*cumulants_inin[1]), M1[1,2] ],
-             [M1[1,0]*np.exp(cumulants[0]), M1[1,1]*np.exp(cumulants[0]), M1[2,2]]])
+             [M1[2,0]*np.exp(cumulants[0]), M1[2,1]*np.exp(cumulants[0]), M1[2,2]]])
 Qlist=[]
 Qlist.append(Q0)
 for i in range(int(L-1)):
     Qlist.append(np.array([[np.exp(2*cumulants_inin[i+2]), np.exp(2*cumulants[i+2]), 1 ],
                            [np.exp(2*cumulants[i+2]), np.exp(2*cumulants_inin[i+2]), 1],
                            [1, 1, 1]]))
-
-
 
 
 tfinal=100
