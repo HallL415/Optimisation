@@ -56,11 +56,19 @@ w0 = params.w0
 T = params.T
 r0 = params.r0
 l = params.l
+lbar=params.lbar
 lp=params.lp
 Vs = params.Vs
 sharebath=params.sharebath
 L = params.L
-tauib=3.25
+
+
+
+if dotshape=='spherical':
+    tauib=np.sqrt(2)*np.pi*l/Vs
+if dotshape=='smartie':
+    tauib=np.sqrt(2)*np.pi *lbar/Vs
+
 
 if L<15: # original needs an enormous amount of ram to run for L > 27
     import QD_QD_CAV as original
@@ -91,6 +99,7 @@ class Cumulants(object):
         if dotshape=='smartie':
             K11s=K11_smartie(t, j0, l, lp, Vs, T)
             K12s=sharebath*(K12_smartie(t, j0, l, lp, Vs, T, r0))
+    
         return K11s,  K12s  # gives Kinin(t) and Kinim(t) respectively
 
     def Kn(self, cumulants, cumulantsinin, dt):
@@ -405,31 +414,31 @@ def get_nth_permutation():
         # print(f"\n Step3 Finding which indices to extract for calc: {np.round((time.time() - start_time), 2)} seconds")
         
             ############################## Removing only contributions below a threshold of the maximum S value every timestep.
-        print('\n V rows before truncation:', V.shape[0])
-        A, S, V = np.linalg.svd(V, full_matrices=False)
-        threshold = S[0] * threshold_factor
-        thresh = np.where(S > threshold)[0]
-        S= S[thresh]
-        # print('S size:',np.shape(S))
-        S2.append(S)
-        A= A[:, thresh]
-        V = V[thresh, :]
-        S=np.diag(S)
-        print('\n V rows after truncation:', V.shape[0])
-        U= U @ A @ S
-        # extra SVD application on U to try and shorten further if V doesn't truncate much
-        if SVD_Both==1 and len(np.diag(S))> 8 :
-            print('\n U columns before truncation:', U.shape[1])
-            U, S, B = np.linalg.svd(U, full_matrices=False)
-            threshold = S[0] * threshold_factor
-            thresh = np.where(S > threshold)[0]
-            S= S[thresh]
-            B=B[thresh,:]
-            U=U[:,thresh]
-            S=S[thresh]
-            S=np.diag(S)
-            V=S @ B @ V
-            print('\n U columns after truncation:', U.shape[1])
+        # print('\n V rows before truncation:', V.shape[0])
+        # A, S, V = np.linalg.svd(V, full_matrices=False)
+        # threshold = S[0] * threshold_factor
+        # thresh = np.where(S > threshold)[0]
+        # S= S[thresh]
+        # # print('S size:',np.shape(S))
+        # S2.append(S)
+        # A= A[:, thresh]
+        # V = V[thresh, :]
+        # S=np.diag(S)
+        # print('\n V rows after truncation:', V.shape[0])
+        # U= U @ A @ S
+        # # extra SVD application on U to try and shorten further if V doesn't truncate much
+        # if SVD_Both==1 and len(np.diag(S))> 8 :
+        #     print('\n U columns before truncation:', U.shape[1])
+        #     U, S, B = np.linalg.svd(U, full_matrices=False)
+        #     threshold = S[0] * threshold_factor
+        #     thresh = np.where(S > threshold)[0]
+        #     S= S[thresh]
+        #     B=B[thresh,:]
+        #     U=U[:,thresh]
+        #     S=S[thresh]
+        #     S=np.diag(S)
+        #     V=S @ B @ V
+        #     print('\n U columns after truncation:', U.shape[1])
 
         # print('entered SVD part')
         P3= np.abs(np.exp(cumulants[0])*(np.dot( (U)[-1,:], V[:,V_val2])))
@@ -448,7 +457,10 @@ def get_nth_permutation():
 
 # L=6
 
-tauib=3.25
+if dotshape=='spherical':
+    tauib=np.sqrt(2)*np.pi*l/Vs
+if dotshape=='smartie':
+    tauib=np.sqrt(2)*np.pi *lbar/Vs
 t0=r0/Vs
 if sharebath ==1:
     dt=( t0 + 1.2*tauib )/(L+1)
@@ -471,7 +483,7 @@ for i in range(int(L-1)):
                            [1, 1, 1]]))
 
 
-tfinal=100
+tfinal=10
 step_no = int(tfinal/dt)
 # step_no = 1
 length = L/2
