@@ -471,7 +471,7 @@ cumulants,cumulants_inin=Cumulants().cu(L,dt)
 
 Q0=np.array([[M1[0,0]*np.exp(cumulants_inin[0] +2*cumulants_inin[1]), M1[0,1]*np.exp(cumulants_inin[0] +2*cumulants[1]), M1[0,2] ],
              [M1[1,0]*np.exp(cumulants_inin[0] +2*cumulants[1]), M1[1,1]*np.exp(cumulants_inin[0] +2*cumulants_inin[1]), M1[1,2] ],
-             [M1[2,0]*np.exp(cumulants[0]), M1[2,1]*np.exp(cumulants[0]), M1[2,2]]])
+             [M1[2,0]*np.exp(cumulants_inin[0]), M1[2,1]*np.exp(cumulants_inin[0]), M1[2,2]]])
 Qlist=[]
 Qlist.append(Q0)
 for i in range(int(L-1)):
@@ -480,7 +480,7 @@ for i in range(int(L-1)):
                            [1, 1, 1]]))
 
 
-tfinal=10
+tfinal=80
 step_no = int(tfinal/dt)
 # step_no = 1
 length = L/2
@@ -497,7 +497,7 @@ P=np.ravel(P)
 fig1 = plt.figure( figsize=(6,6),dpi=150)
 # bb.set_title(fr'L={L}')
 # plt.plot(tpsf_orig, abs(Pnf_orig), 'b', linewidth='1', label=f'original')
-plt.plot(tm, abs(Pn), 'b', linewidth='1', label=f'original')
+# plt.plot(tm, abs(Pn), 'b', linewidth='1', label=f'original')
 plt.plot(times[2:], P, 'r--', linewidth='1', label=f'SVD, L={L}')
 
 plt.legend(loc='best') 
@@ -512,9 +512,15 @@ def calculate_rmse(y_true, y_pred):
     mean_squared_error = np.mean(squared_errors)
     rmse = np.sqrt(mean_squared_error)
     return rmse
-if L<27:
+if L<15:
     error=calculate_rmse(Pnf_orig, P)
     print(f'The RMSE for a threshold value of {threshold_factor} is {error:.2e}')
+
+RAM_avail=8 #free RAM in GB.
+maximum_neighbours=np.emath.logn(3,(RAM_avail / (3*16*10**-9))) # 3^(L+1) tensor elements * 16 bytes per complex number stored * 10^-9 for byte to GB conversion
+
+
+
 
 
 # for i in range(0,len(S2)):
