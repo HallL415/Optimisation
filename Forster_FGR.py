@@ -1,17 +1,18 @@
 #For calculatiing FGR decay rates - Gamma1, Gamma2
 import matplotlib.pyplot as plt
 import numpy as np
-import Parameters as params
+# import Parameters as params
+from params import Parameters
 from Functions import FreqAsymptot, Jw,  LpopAsymptot, Sanalyt,  forster
 from scipy.linalg import expm
 
+params = Parameters()
+
 hbar= params.hbar
 kb=params.kb
-
-T=params.T
+T=params.T_ps
 l=params.l
 Vs=params.Vs
-#g=params.g
 fact=params.fact
 def GammaPh(R0,det,T):
     # print(det,T)
@@ -267,7 +268,7 @@ def asymptotics(R0,det):
     return C.real,Tau.real
 
 from Functions import BN, gxN, gyN, SyN, Jw, Jw2
-BN=BN(params.j0,params.w0,params.r0,Vs,T)
+BN=BN(params.j0,params.w0,params.r0,params.Vs,params.T_ps)
 def Nazir(t,VF):
     VR=BN*VF
     gam1=VF**2*(2*gxN(0,params.j0,params.w0,T,params.r0,Vs)+gyN(2*VR,params.j0,params.w0,T,params.r0,Vs)*(1+2*(1/(np.exp(2*VR/T)-1)))/(1+(1/(np.exp(2*VR/T)-1))))
