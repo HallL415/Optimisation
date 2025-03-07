@@ -459,7 +459,7 @@ def forster(l,eps,dcv,d,lim1,lim2, lim11, lim22):
 
 
 def FGR_qdcav_spherical(g,j0_FGR,l,Vs,T):
-    hbar= 0.6582
+    hbar= 0.6582119569# [meV ps]
     N= (1/(np.exp(2*g/T)-1))  
     gamma_ph= g**3 * j0_FGR * np.exp(-(2*g**2 * l**2)/(Vs**2))
     Gamma_1= N * gamma_ph
@@ -467,7 +467,7 @@ def FGR_qdcav_spherical(g,j0_FGR,l,Vs,T):
     return 1e3*hbar*Gamma_1, 1e3*hbar*Gamma_2
     
 def FGR_qdcav_spherical_det(g,detuning,j0_FGR,l,Vs,T):
-    hbar= 0.6582
+    hbar= 0.6582119569# [meV ps]
     R= np.sqrt((detuning**2 + 4*g**2)) 
     # print(hbar*1e3*R)
     N=1/(np.exp(R/T)-1)
@@ -479,7 +479,8 @@ def FGR_qdcav_spherical_det(g,detuning,j0_FGR,l,Vs,T):
     return 1e3*hbar*Gamma_1, 1e3*hbar*Gamma_2
 
 def analytics_bareg(j0,j0_FGR,l,Vs,w0,T,r0, detuning,g,Om1,Om2,gamma1,gamma2):  #FGR QD-QD isotropic dots
-    hbar= 0.6582
+    hbar= 0.6582119569# [meV ps]
+   
     R= np.sqrt((detuning**2 + 4*g**2)) 
     # print(hbar*1e3*R)
     N=1/(np.exp(R/T)-1)
@@ -500,7 +501,8 @@ def analytics_modified(j0,j0_FGR,l,Vs,w0,T,r0, detuning,g,Om1,Om2,gamma1,gamma2)
     DeltaS=np.exp(-(Sinin-Sinim))
   
     
-    hbar= 0.6582
+    hbar= 0.6582119569# [meV ps]
+
     R= np.sqrt((detuning**2 + 4*(g*DeltaS)**2)) 
     # print(hbar*1e3*R)
     N=1/(np.exp(R/T)-1)
@@ -517,7 +519,8 @@ def analytics_modified(j0,j0_FGR,l,Vs,w0,T,r0, detuning,g,Om1,Om2,gamma1,gamma2)
 
 
 def QDQD_analytics_smartie(gd,detuning,l,lp,Vs,r0,T,DvDc):  #FGR QD-QD anisotropic dots
-     hbar= 0.6582
+     hbar= 0.6582119569# [meV ps]
+    
      R=np.sqrt((detuning)**2 + 4*(gd)**2)
      Dp=np.sqrt(1/2) * np.sqrt(1+(detuning/ R))
      Dm=np.sqrt(1/2) * np.sqrt(1-(detuning / R))
@@ -538,7 +541,7 @@ def QDQD_analytics_smartie(gd,detuning,l,lp,Vs,r0,T,DvDc):  #FGR QD-QD anisotrop
 
 
 
-def FGR_spherical(j0_FGR,l,Vs,T,g1,gd,w_qd1,w_c,R0s): #QD-QD-CAV spherical FGR
+def FGR_spherical(j0_FGR,l,Vs,T,g1,g2,gd,w_qd1,w_qd2,w_c,R0s): #QD-QD-CAV spherical FGR
     # hbar= 0.6582
     # H0= smp.Matrix([[w_qd1, gd, g1 ], [gd , w_qd1, g1],[g1, g1, w_c]])
     # P, D = H0.diagonalize()   #P*D*P**-1
@@ -572,15 +575,99 @@ def FGR_spherical(j0_FGR,l,Vs,T,g1,gd,w_qd1,w_c,R0s): #QD-QD-CAV spherical FGR
     # # wsmall=float(np.array([abs(list(H0.eigenvals().keys())[1])])[0])  #smallest transition between states 1 and 3
     # # wbig=float(np.array([abs(list(H0.eigenvals().keys())[2])])[0])   #second largest transition in terms of energy, from middle state to 2nd state (equidistant for zero det)
     # # wbiggest=float(abs(wbig + wsmall))  #energy difference from lowest energy state (3) to highest (2) ( 1 is in middle)
-    hbar= 0.6582
-    if gd==g1:
-        gd=g1-1e-7
-    H0= smp.Matrix([[w_qd1, gd, g1 ], [gd , w_qd1, g1],[g1, g1, w_c]])
-    P, D = H0.diagonalize()   #P*D*P**-1
+    import pprint
+    hbar= 0.6582119569# [meV ps]
+    # kb=8.617333262e-2 # [meV ps]
+    # if gd==g1:
+    #     gd=g1-1e-7
+    H0= smp.Matrix([[w_qd1, gd, g1 ], [gd , w_qd2, g2],[g1, g2, w_c]])
+    # P, D = H0.diagonalize()   #P*D*P**-1  should give the original H0 matrix. D are the eigenvalues
+    # P_inv=P**-1
+    
+    # print(P*D*P**-1) 
+    # pprint.pp(H0)
+    # pprint.pp(D)
+    # pprint.pp(P)
+    
+    P, D = H0.diagonalize()  # P * D * P.inv() should give H0
+
+    eigenvalues = [D[i, i] for i in range(D.rows)]  # Extract diagonal elements from D
+    sorted_indices = sorted(range(len(eigenvalues)), key=lambda i: eigenvalues[i], reverse=True)  # Sort indices by eigenvalue, descending
+    
+    # Reorder D to follow the desired order (upper, middle, lower)
+    D= smp.diag(*[eigenvalues[i] for i in sorted_indices])
+    # pprint.pp(D)
+    # Reorder P to match the new order of eigenvalues
+    P = P[:, sorted_indices]
+    # pprint.pp(P)
     P_inv=P**-1
+    # Verify that P_sorted * D_sorted * P_sorted.inv() = H0
+    # print(P*D*P**-1)    
+    
+    
+    ##################################
+    #### g,g1=g2, no detuning ####
+    #energy levels (eigenvalues)
+    # print(-gd)
+    # print(gd/2 - np.sqrt(gd**2 + 8*g1**2)/2 )
+    # print( gd/2 + np.sqrt(gd**2 + 8*g1**2)/2 )
+    
+    
+    # d_plus=0.5* np.sqrt(1 + (gd/np.sqrt(gd**2 + 8*g1**2)))
+    # d_minus=0.5* np.sqrt(1 - (gd/np.sqrt(gd**2 + 8*g1**2)))
+     
+    # #analytic matrices to diagonalise H0 (zero detuning)
+    # S = np.array([[1/np.sqrt(2), d_plus, d_minus],
+    #               [-1/np.sqrt(2), d_plus, d_minus],
+    #               [0, np.sqrt(2)*d_minus, -np.sqrt(2)*d_plus]])
+    
+    
+    # S = np.array([[d_plus, 1/np.sqrt(2), d_minus],   #other arangement, should still diagonalise but diagonals different locations
+    #               [d_plus, -1/np.sqrt(2), d_minus],
+    #               [np.sqrt(2)*d_minus, 0, -np.sqrt(2)*d_plus]])
+    
+    
+    
+    # pprint.pp(S)
+    # S_dag = S.T
+    # pprint.pp(S_dag * H0 * S) #should be diagonalised H0, equal to D
+    
+    # ## for g1=g2 and g turned on
+    # #verifying eigenvector equation Hv-lambda v =0
+    # lambda1 = -gd
+    # v1 = np.array([1 / np.sqrt(2), -1 / np.sqrt(2), 0])
+    # result1 = np.dot(H0, v1) - lambda1 * v1 # Compute Ax - lambda * x
+
+
+    # lambda2=gd/2 + np.sqrt(gd**2 + 8*g1**2)/2
+    # v2=np.array([d_plus,d_plus,np.sqrt(2)*d_minus])
+    # result2=np.dot(H0,v2)-lambda2*v2
+    # result2
+    
+    # lambda3=gd/2 - np.sqrt(gd**2 + 8*g1**2)/2
+    # v3=np.array([d_minus,d_minus,-np.sqrt(2)*d_plus])
+    # result3=np.dot(H0,v3)-lambda3*v3
+    # result3
+    ## RESULT: all close to 0, 10^-16 or lower.
+    
+
+   #################################
     
     rows_P = [P.row(i) for i in range(P.rows)]
     rows_P_inv = [P_inv.row(i) for i in range(P_inv.rows)]
+    
+    # S=np.array([[1/np.sqrt(2) ,0.5,-0.5],[-1/np.sqrt(2),0.5,-0.5],[0,-np.sqrt(2)*0.5,-np.sqrt(2)*0.5]])  #From P in this code
+    # S=np.array([[0.5 ,1/np.sqrt(2),0.5],[0.5,-1/np.sqrt(2),0.5],[np.sqrt(2)*0.5, 0, -np.sqrt(2)*0.5]]) # from paper, gives same as one below
+    # H0= smp.Matrix([[0, 0, g1 ], [0 , 0, g1],[g1, g1, 0]])
+
+    # S_inv=S.T
+    # pprint.pp(S)
+    # pprint.pp(S_inv * H0 * S)
+    
+    
+    # pprint.pp(P_inv * H0 * P) #diagonalises H0
+    
+    
     
     # V1, V2 = symbols('V1 V2')
     # # Define matrix V
@@ -622,15 +709,20 @@ def FGR_spherical(j0_FGR,l,Vs,T,g1,gd,w_qd1,w_c,R0s): #QD-QD-CAV spherical FGR
     # Convert all eigenvalues to numerical values
     numerical_eigenvals = [val.evalf() for val in all_eigenvals]
     numerical_eigenvals=np.array([numerical_eigenvals], dtype=np.float64)
-    # energylvls=np.sort(numerical_eigenvals)[0]
-    # wsmall=energylvls[1]-energylvls[0]
-    # wbig=energylvls[2]-energylvls[1]
-    # wbiggest=energylvls[2]-energylvls[0] 
-    
-    w_diag12=np.abs(numerical_eigenvals[0][1]-numerical_eigenvals[0][0])
-    w_diag13=np.abs(numerical_eigenvals[0][2]-numerical_eigenvals[0][0])
-    w_diag23=np.abs(numerical_eigenvals[0][2]-numerical_eigenvals[0][1])
 
+   
+
+
+    
+    # w_diag12=np.abs(numerical_eigenvals[0][1]-numerical_eigenvals[0][0])
+    # w_diag13=np.abs(numerical_eigenvals[0][2]-numerical_eigenvals[0][0])  
+    # w_diag23=np.abs(numerical_eigenvals[0][2]-numerical_eigenvals[0][1]) 
+     
+    numerical_eigenvals=np.sort(numerical_eigenvals[0])[::-1]
+    w_diag12=np.abs(numerical_eigenvals[0]-numerical_eigenvals[1])
+    w_diag13=np.abs(numerical_eigenvals[1]-numerical_eigenvals[2])    
+    w_diag23=np.abs(numerical_eigenvals[0]-numerical_eigenvals[2])
+    
      
     def Gamma_Ph(const,R0s,w,PorM):
         return const*j0_FGR*w**3 * np.exp(-(l**2 * w**2)/(2*Vs**2)) * (1 +PorM* (Vs* np.sin(w*R0s/Vs))/(w*R0s) )
@@ -647,12 +739,14 @@ def FGR_spherical(j0_FGR,l,Vs,T,g1,gd,w_qd1,w_c,R0s): #QD-QD-CAV spherical FGR
     # dephasing1=GammaUp(constbig,R0s,wbig,-1) + GammaDown(constsmall,R0s,wsmall,-1)
     # dephasing2=GammaDown(constbig,R0s,wbig,-1) + GammaDown(constbiggest,R0s,wbiggest,+1)
     # dephasing3=GammaUp(constsmall,R0s,wsmall,-1) + GammaUp(constbiggest,R0s,wbiggest,+1)
-    dephasing1=Gammas(coefficients1[0]**2,R0s,w_diag12,-1)[0] + Gammas(coefficients1[1]**2,R0s,w_diag13,-1)[1]  # red
-    dephasing2=Gammas(coefficients1[0]**2,R0s,w_diag12,-1)[1] + Gammas(coefficients1[2]**2,R0s,w_diag23,+1)[1] #blue
-    dephasing3=Gammas(coefficients1[1]**2,R0s,w_diag13,-1)[0] + Gammas(coefficients1[2]**2,R0s,w_diag23,+1)[0] #  green 
     
+    # dephasing1=Gammas(coefficients1[0]**2,R0s,w_diag12,-1)[0] + Gammas(coefficients1[1]**2,R0s,w_diag13,-1)[1]  # red
+    # dephasing2=Gammas(coefficients1[0]**2,R0s,w_diag12,-1)[1] + Gammas(coefficients1[2]**2,R0s,w_diag23,+1)[1] #blue
+    # dephasing3=Gammas(coefficients1[1]**2,R0s,w_diag13,-1)[0] + Gammas(coefficients1[2]**2,R0s,w_diag23,+1)[0] #  green 
+    dephasing1=Gammas(coefficients1[0]**2,R0s,w_diag12,-1)[0] + Gammas(coefficients1[2]**2,R0s,w_diag13,-1)[1]  # red
+    dephasing2=Gammas(coefficients1[0]**2,R0s,w_diag12,-1)[1] + Gammas(coefficients1[1]**2,R0s,w_diag23,+1)[1] #blue
+    dephasing3=Gammas(coefficients1[2]**2,R0s,w_diag13,-1)[0] + Gammas(coefficients1[1]**2,R0s,w_diag23,+1)[0] #  green 
     return 1e3*dephasing1, 1e3*dephasing2, 1e3*dephasing3
-
 
 
 
@@ -735,7 +829,7 @@ def FGR_smartie(j0_FGR,l,lp,Vs,T,g1,gd,w_qd1,w_c,R0s):  #FGR QD-QD-CAV anisotrop
         else:
             N=0
         dephasing=[]
-        for r0 in R0s:
+        for r0 in np.array([R0s]):
             dephasing.append(quad(Gamma_Ph2, 0,np.pi,args=(r0,w,PorM))[0])
         dephasing=np.array([dephasing],dtype=np.float64)[0]
         return hbar* N * const*dephasing, hbar* (N+1) * const*dephasing
