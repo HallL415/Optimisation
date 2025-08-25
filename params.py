@@ -7,6 +7,7 @@ class Parameters:
         # System configuration
         self.correlator = kwargs.get('correlator', 'LP')
         self.L = kwargs.get('L', 20) 
+        self.extrapolation = kwargs.get('extrapolation', 1)
         self.threshold_factor = kwargs.get('threshold_factor', 1e-8)
         self.matrix_no = kwargs.get('matrix_no', 4)
         self.tfinal = kwargs.get('tfinal', 200)
@@ -14,52 +15,21 @@ class Parameters:
         self.cavity = kwargs.get('cavity', 1)
         self.no_of_QDs = kwargs.get('no_of_QDs', 1)
         self.d = kwargs.get('d', self.cavity + self.no_of_QDs)
-        
-       
+            
+        self.Foerster_coupling =  kwargs.get('Foerster_coupling', 0)
+        self.r_start = kwargs.get('r_start', 0)
         self.sharebath = kwargs.get('sharebath', 1)
-        self.tf = kwargs.get('tf', 200)
+        # self.tf = kwargs.get('tf', 200)
         self.dotshape = kwargs.get('dotshape', 'spherical')
         self.ec = kwargs.get('ec', '1')
         self.mc = kwargs.get('mc', '1')
-        if self.correlator=='LP' and self.no_of_QDs==1:
-            if self.ec=='1':
-                self.exc_channel=0
-            if self.ec=='C':
-                self.exc_channel= 1
-            if self.mc=='1':
-                self.measure_channel=0
-            if self.mc=='C':
-               self.measure_channel=1                
-        if self.correlator=='LP' and self.no_of_QDs==2:
-            if self.ec=='1':
-                self.exc_channel=0
-            if  self.ec=='2':
-                self.exc_channel=1
-            if  self.ec=='C':
-                self.exc_channel=2
-            if  self.mc=='1':
-                self.measure_channel=0
-            if  self.mc=='2':
-                self.measure_channel=1
-            if  self.mc=='C':
-                self.measure_channel=2    
-        if self.correlator=='NQD':
-            if self.ec=='2':
-                self.exc_channel=4
-            else:
-                self.exc_channel=1
-            if self.mc=='2':
-                self.measure_channel=4
-            else:
-                self.measure_channel=1
 
         # Physical parameters
         self.T = kwargs.get('T', 50)  # temperature in K
-        self.g = kwargs.get('g', 0)   # exciton-exciton coupling strength in micro eV
-        self.gc = kwargs.get('gc', 600)  # exciton-cavity coupling strength
+        self.g = kwargs.get('g', 0)   # exciton-cavity coupling strength in micro eV for 1 QD or direct QD-QD coupling for 2 QDs
         self.detuning = kwargs.get('detuning', 0)  # detuning in micro eV
-        self.g1 = kwargs.get('g1', self.gc)  # exciton 1-cavity coupling strength
-        self.g2 = kwargs.get('g2', self.gc)  # exciton 2-cavity coupling strength
+        self.g1 = kwargs.get('g1', 200)  # exciton 1-cavity coupling strength
+        self.g2 = kwargs.get('g2', 200)  # exciton 2-cavity coupling strength
         self.r0 = kwargs.get('r0', 10)  # distance between QDs in nm
         self.DvDc = kwargs.get('DvDc', 6.5)  # Dc-Dv in eV
         self.l = kwargs.get('l', 3.3)  # exciton confinement lengths
@@ -96,18 +66,45 @@ class Parameters:
         self.dens = 5.65  # [g/cm^3]
     
     def _init_derived_params(self):
-        # Apply conditional logic based on system configuration
-        if self.cavity == 1 and self.no_of_QDs == 2:
-            self.gd = self.g
-        elif self.cavity == 1 and self.no_of_QDs == 1:
-            self.gd = self.gc
-            # self.g1 = 0
-            # self.g2 = 0
+        if self.correlator=='LP' and self.no_of_QDs==1:
+            self.phonon_uncoupled_mode=1 #cavity channel defined as 1 (in maths we use 0 as cavity and 1,2 etc for QD exciton states)
+            if self.ec=='1':
+                self.exc_channel=0
+            if self.ec=='C':
+                self.exc_channel= 1
+            if self.mc=='1':
+                self.measure_channel=0
+            if self.mc=='C':
+               self.measure_channel=1                
+        if self.correlator=='LP' and self.no_of_QDs==2:
+            self.phonon_uncoupled_mode=2 # cavity channel defined as 2
+            if self.ec=='1':
+                self.exc_channel=0
+            if  self.ec=='2':
+                self.exc_channel=1
+            if  self.ec=='C':
+                self.exc_channel=2
+            if  self.mc=='1':
+                self.measure_channel=0
+            if  self.mc=='2':
+                self.measure_channel=1
+            if  self.mc=='C':
+                self.measure_channel=2    
+        if self.correlator=='NQD':
+            self.phonon_uncoupled_mode=0
+            if self.ec=='2':
+                self.exc_channel=4
+            else:
+                self.exc_channel=1
+            if self.mc=='2':
+                self.measure_channel=4
+            else:
+                self.measure_channel=1
 
             
         if self.correlator == 'NQD':
             self.d = 5
-            self.gd = 0
+            # self.gd = 0
         elif self.correlator == 'LP':
             self.d = self.cavity + self.no_of_QDs
             
@@ -178,14 +175,18 @@ class Parameters:
         
         if self.correlator == 'LP':
             self.g_comp = self.g * 1e-3 / self.hbar
+            if self.Foerster_coupling == 1:
+                # if self.r0 > self.r_start:
+                    # self.distance = self.r0 - self.r_start
+                self.g_comp = self.g_comp * (self.r_start / self.r0)**3
         else:
             self.g_comp = self.g  # For NQD, g is already calculated in computational units
             
         self.g1_comp = self.g1 * 1e-3 / self.hbar
         self.g2_comp = self.g2 * 1e-3 / self.hbar
         
-        if self.cavity == 1:
-            self.gd_comp = self.gd * 1e-3 / self.hbar
+        # if self.cavity == 1:
+        #     self.gd_comp = self.gd * 1e-3 / self.hbar
             
         self.detuning_comp = self.detuning * 1e-3 / self.hbar
         self.det = self.detuning_comp
@@ -308,9 +309,10 @@ class Parameters:
         return {
             'L': self.L, 
             'r0': self.r0, 
+            'g': self.g_comp,
             'g1': self.g1_comp, 
             'g2': self.g2_comp, 
-            'gd': self.gd_comp if hasattr(self, 'gd_comp') else 0, 
+            # 'gd': self.gd_comp if hasattr(self, 'gd_comp') else 0, 
             'w_qd1': self.w_qd1, 
             'w_qd2': self.w_qd2, 
             'w_c': self.w_c if hasattr(self, 'w_c') else 0, 
@@ -336,40 +338,36 @@ class Parameters:
         if self.cavity == 0:
             label = f"{self.correlator}_{self.dotshape}_{int(self.no_of_QDs)}QDs_{int(self.cavity)}cavs_" \
                     f"T{round(self.T_ps*self.hbar/self.kb)}_g{round(self.g_comp*self.hbar*1e3)}_" \
-                    f"R{np.round(np.float64(self.r0),3)}_L{self.L}_l{np.round(np.float64(self.l),1)}_" \
+                    f"R{np.round(np.float64(self.r0),3)}_L{self.L}_mtrxno{self.matrix_no}_l{np.round(np.float64(self.l),1)}_" \
                     f"lp{np.round(np.float64(self.lp),1)}_EC{self.ec}_MC{self.mc}_DvDc{self.DvDc}_" \
                     f"det{np.round(self.detuning_comp*self.hbar*1e3,1)}_sharebath{self.sharebath}_" \
-                    f"threshold{self.threshold_factor}_factortau{self.factortau}_tf{self.tf}"
+                    f"threshold{self.threshold_factor}_factortau{self.factortau}_tf{self.tfinal}"
         elif self.cavity == 1 and self.no_of_QDs == 1:
             label = f"{self.correlator}_{self.dotshape}_QDs{int(self.no_of_QDs)}_cav{int(self.cavity)}_" \
-                    f"T{round(self.T_ps*self.hbar/self.kb)}_g{round(self.gd_comp*self.hbar*1e3)}_" \
-                    f"L{self.L}_l{np.round(np.float64(self.l),1)}_lp{np.round(np.float64(self.lp),1)}_" \
+                    f"T{round(self.T_ps*self.hbar/self.kb)}_g{round(self.g_comp*self.hbar*1e3)}_" \
+                    f"L{self.L}_mtrxno{self.matrix_no}_l{np.round(np.float64(self.l),1)}_lp{np.round(np.float64(self.lp),1)}_" \
                     f"EC{self.ec}_MC{self.mc}_DvDc{self.DvDc}_det{np.round(self.detuning_comp*self.hbar*1e3,1)}_" \
-                    f"sharebath{self.sharebath}_threshold{self.threshold_factor}_factortau{self.factortau}_tf{self.tf}"
+                    f"sharebath{self.sharebath}_threshold{self.threshold_factor}_factortau{self.factortau}_tf{self.tfinal}"
         elif self.cavity == 1 and self.no_of_QDs == 2:
             label = f"{self.correlator}_{self.dotshape}_QDs{int(self.no_of_QDs)}_cav{int(self.cavity)}_" \
                     f"T{round(self.T_ps*self.hbar/self.kb)}_1g{round(self.g1_comp*self.hbar*1e3)}_" \
-                    f"2g{round(self.g2_comp*self.hbar*1e3)}_g{round(self.gd_comp*self.hbar*1e3)}_" \
-                    f"R{np.round(np.float64(self.r0),3)}_L{self.L}_l{np.round(np.float64(self.l),1)}_" \
+                    f"2g{round(self.g2_comp*self.hbar*1e3)}_g{round(self.g_comp*self.hbar*1e3)}_" \
+                    f"R{np.round(np.float64(self.r0),3)}_L{self.L}_mtrxno{self.matrix_no}_l{np.round(np.float64(self.l),1)}_" \
                     f"lp{np.round(np.float64(self.lp),1)}_EC{self.ec}_MC{self.mc}_DvDc{self.DvDc}_" \
                     f"det{np.round(self.detuning_comp*self.hbar*1e3,1)}_sharebath{self.sharebath}_" \
-                    f"factortau{self.factortau}_threshold{self.threshold_factor}_tf{self.tf}"
+                    f"factortau{self.factortau}_threshold{self.threshold_factor}_tf{self.tfinal}"
         return label
-    
-    # def generate_cumulants(self):
-    #     """Generate cumulants using the current parameters"""
-    #     # This replaces the external CumulantGenerator function
-    #     M1, Qlist, exp_k0_factor, exc_channel, measure_channel = self._cumulant_generator()
-    #     return M1, Qlist, exp_k0_factor, exc_channel, measure_channel
+ 
     
     def cumulant_generator(self):
         """Internal implementation of CumulantGenerator function"""
         # Get required parameters
         L = self.L
         r0 = self.r0
+        g = self.g_comp
         g1 = self.g1_comp
         g2 = self.g2_comp
-        gd = self.gd_comp if hasattr(self, 'gd_comp') else 0
+        # gd = self.gd_comp if hasattr(self, 'gd_comp') else 0
         w_qd1 = self.w_qd1
         w_qd2 = self.w_qd2
         gamma1=self.gamma1_comp
@@ -504,7 +502,7 @@ class Parameters:
             phonon_uncoupled_permutation = -1
             
             # Import required functions from your modules
-            LF = LFpol_qdqdcav(g1, g2, gd, w_qd1, w_qd2, w_c)
+            LF = LFpol_qdqdcav(g1, g2, g, w_qd1, w_qd2, w_c)
             M1 = expm(-1j * LF * dt)
             
             params_cumulant = {
@@ -570,7 +568,7 @@ class Parameters:
             phonon_uncoupled_permutation = -1
             
             # Import required functions from your modules
-            D, ww, U1, V1 = DiagM_qdcav(gd, 0, 0, 0, detuning, omp)
+            D, ww, U1, V1 = DiagM_qdcav(g, 0, 0, 0, detuning, omp)
             DD = np.diag(np.exp(-1j * ww * dt))
             M1 = U1 * DD * V1
             
@@ -622,7 +620,7 @@ class Parameters:
             dt= (t0 + factortau*tauib )/(L+1)          
             phonon_uncoupled_mode=0
             phonon_uncoupled_permutation=0
-            LF = LFpop(gd,  np.real(w_qd1), np.real(w_qd2), gamma1, gamma2) 
+            LF = LFpop(g,  np.real(w_qd1), np.real(w_qd2), gamma1, gamma2) 
             M1=expm(-1j * LF * dt)
             params_cumulant = {
                 'r0': r0,

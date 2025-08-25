@@ -750,9 +750,20 @@ def FGR_spherical(j0_FGR,l,Vs,T,g1,g2,gd,w_qd1,w_qd2,w_c,R0s): #QD-QD-CAV spheri
 
 
 
-
+# j0_FGR=params.j0_FGR
+# l=params.l
+# lp=params.lp
+# Vs=params.Vs
+# T=params.T_ps
+# g1=params.g1_comp
+# g=params.g_comp
+# w_qd1=params.w_qd1
+# w_c=params.w_c
+# R0s=r0_values
+# hbar=params.hbar
 def FGR_smartie(j0_FGR,l,lp,Vs,T,g1,gd,w_qd1,w_c,R0s):  #FGR QD-QD-CAV anisotropic
-    hbar= 0.6582
+    hbar= 0.6582119569# [meV ps]
+   
     if gd==g1:
         gd=g1-1e-7
     H0= smp.Matrix([[w_qd1, gd, g1 ], [gd , w_qd1, g1],[g1, g1, w_c]])
@@ -761,38 +772,10 @@ def FGR_smartie(j0_FGR,l,lp,Vs,T,g1,gd,w_qd1,w_c,R0s):  #FGR QD-QD-CAV anisotrop
     
     rows_P = [P.row(i) for i in range(P.rows)]
     rows_P_inv = [P_inv.row(i) for i in range(P_inv.rows)]
+
     
-    # V1, V2 = symbols('V1 V2')
-    # # Define matrix V
-    # V = Matrix([[V1, 0, 0],
-    #         [0, V2, 0],
-    #         [0, 0, 0]])
-    
-    # result1 = simplify(P1.inv() * V * P1)
-    # # Print the results for the original matrix M1
-    # print("Transformation for original matrix M1:")
-    # print(result1)
-    
-    
-    
-    # smp.pprint(D)
-    # smp.pprint(P**-1)
-    # smp.pprint(P)
-    # smp.pprint(P*P**-1)
-    # smp.pprint(P*D*P**-1)
-    
-    #extracting the eigenvectors that diagonalise H0 as a list. 
-    # sym_eignvects = []
-    # for tup in H0.eigenvects(): 
-    #     for v in tup[2]:
-    #         sym_eignvects.append(list(v))
-    
-    # coefficients=np.sort(np.array([abs(sym_eignvects[0][0] *sym_eignvects[1][0]) , abs(sym_eignvects[0][0] * sym_eignvects[2][0]), abs(sym_eignvects[1][0] * sym_eignvects[2][0])])) #the corresponding components of eigenvectors - like alpha*beta but 3x3 and numerically diagonalised
     coefficients1=np.array([rows_P_inv[0][0]*rows_P[0][1], rows_P_inv[0][0]*rows_P[0][2], rows_P_inv[1][0]*rows_P[0][2]]) # if you expand out S^T V S, these are the coefficients on the relevant elements (offdiagonal)
-    # smp.pprint(coefficients)
-    # constsmall=float(np.array([coefficients[1]**2])[0] ) #corresponding to smallest transition   #like (alpha*beta)**2 for QDQD zero detuning case. and (1/2root2)**2 in zero det QDQDCAV system
-    # constbig=float(np.array([coefficients[2]**2])[0])  #corresponding to 2nd largest transition  - 1/(4) **2 in zero det
-    # constbiggest=float(np.array([coefficients[0]**2])[0]) #corresponding to largest transition - 1/(4) **2 in zero det case
+    coefficients1 = np.array([float(val.evalf()) for val in coefficients1], dtype=np.float64)
     
     eigenvals_dict = H0.eigenvals()
     all_eigenvals = []
@@ -800,46 +783,53 @@ def FGR_smartie(j0_FGR,l,lp,Vs,T,g1,gd,w_qd1,w_c,R0s):  #FGR QD-QD-CAV anisotrop
         all_eigenvals.extend([eigenval] * multiplicity)
     
     # Convert all eigenvalues to numerical values
-    numerical_eigenvals = [val.evalf() for val in all_eigenvals]
-    numerical_eigenvals=np.array([numerical_eigenvals], dtype=np.float64)
-    # energylvls=np.sort(numerical_eigenvals)[0]
-    # wsmall=energylvls[1]-energylvls[0]
-    # wbig=energylvls[2]-energylvls[1]
-    # wbiggest=energylvls[2]-energylvls[0] 
-    
-    w_diag12=np.abs(numerical_eigenvals[0][1]-numerical_eigenvals[0][0])
-    w_diag13=np.abs(numerical_eigenvals[0][2]-numerical_eigenvals[0][0])
-    w_diag23=np.abs(numerical_eigenvals[0][2]-numerical_eigenvals[0][1])
+    # numerical_eigenvals = [val.evalf() for val in all_eigenvals]
+    # numerical_eigenvals=np.array([numerical_eigenvals], dtype=np.float64)
+    numerical_eigenvals = np.array([float(val.evalf()) for val in all_eigenvals], dtype=np.float64)
+    if len(numerical_eigenvals) != 3:
+        raise ValueError(f"Expected 3 eigenvalues, got {len(numerical_eigenvals)}: {numerical_eigenvals}")
+        
+    # w_diag12=np.abs(numerical_eigenvals[0][1]-numerical_eigenvals[0][0])
+    # w_diag13=np.abs(numerical_eigenvals[0][2]-numerical_eigenvals[0][0])
+    # w_diag23=np.abs(numerical_eigenvals[0][2]-numerical_eigenvals[0][1])
+    w_diag12=np.abs(numerical_eigenvals[1]-numerical_eigenvals[0])
+    w_diag13=np.abs(numerical_eigenvals[2]-numerical_eigenvals[0])
+    w_diag23=np.abs(numerical_eigenvals[2]-numerical_eigenvals[1])
 
-    
-    
-    # wsmall=float(np.array([abs(list(H0.eigenvals().keys())[1])])[0])  #smallest transition between states 1 and 3
-    # wbig=float(np.array([abs(list(H0.eigenvals().keys())[2])])[0])   #second largest transition in terms of energy, from middle state to 2nd state (equidistant for zero det)
-    # wbiggest=float(abs(wbig + wsmall))  #energy difference from lowest energy state (3) to highest (2) ( 1 is in middle)
-      
+
     def Gamma_Ph2(theta,R0s,w,PorM):
         integrand= np.sin(theta)* j0_FGR/2 *w**3 * np.exp(-(l**2 * w**2 * np.sin(theta)**2)/(2*Vs**2))* np.exp(-(lp**2 * w**2 * np.cos(theta)**2)/(2*Vs**2))  * (1 +PorM* (np.cos(w*R0s*np.cos(theta)/Vs)) )
         return integrand
 
 
- 
-    def Gammas(const,R0s,w,PorM): #up transition is [0] and down transition is [1], constants and delta w  determined by specific transitions. see diagram
-        if w !=0:
-            N=1/(np.exp(w/T)-1)
-        else:
-            N=0
-        dephasing=[]
-        for r0 in np.array([R0s]):
-            dephasing.append(quad(Gamma_Ph2, 0,np.pi,args=(r0,w,PorM))[0])
-        dephasing=np.array([dephasing],dtype=np.float64)[0]
-        return hbar* N * const*dephasing, hbar* (N+1) * const*dephasing
-    
+    def Gammas(const, R0s, w, PorM):
+           if w != 0:
+               N = 1 / (np.exp(w / T) - 1)
+           else:
+               N = 0
+           if np.isscalar(R0s):
+               # Scalar case: compute a single dephasing value
+               dephasing = quad(Gamma_Ph2, 0, np.pi, args=(R0s, w, PorM))[0]
+           else:
+               # Array case: compute dephasing for each R0s value
+               dephasing = np.array([quad(Gamma_Ph2, 0, np.pi, args=(r0, w, PorM))[0] for r0 in R0s], dtype=np.float64)
+           return hbar * N * const * dephasing, hbar * (N + 1) * const * dephasing
+    # def Gammas(const,R0s,w,PorM): #up transition is [0] and down transition is [1], constants and delta w  determined by specific transitions. see diagram
+    #     if w !=0:
+    #         N=1/(np.exp(w/T)-1)
+    #     else:
+    #         N=0
+    #     dephasing=[]
+    #     try:
+    #         for r0 in R0s:
+    #             dephasing.append(quad(Gamma_Ph2, 0,np.pi,args=(r0,w,PorM))[0])
+    #     except:
+    #         for r0 in np.array([R0s]):
+    #             dephasing.append(quad(Gamma_Ph2, 0,np.pi,args=(r0,w,PorM))[0])
+    #     dephasing=np.array([dephasing],dtype=np.float64)[0]
+    #     return hbar* N * const*dephasing, hbar* (N+1) * const*dephasing
     
 
-    # dephasing1=Gammas(constbig,R0s,wbig,-1)[0] + Gammas(constsmall,R0s,wsmall,-1)[1]  # red
-    # dephasing2=Gammas(constbig,R0s,wbig,-1)[1] + Gammas(constbiggest,R0s,wbiggest,+1)[1] #blue
-    # dephasing3=Gammas(constsmall,R0s,wsmall,-1)[0] + Gammas(constbiggest,R0s,wbiggest,+1)[0] #  green 
-    
     dephasing1=Gammas(coefficients1[0]**2,R0s,w_diag12,-1)[0] + Gammas(coefficients1[1]**2,R0s,w_diag13,-1)[1]  # red
     dephasing2=Gammas(coefficients1[0]**2,R0s,w_diag12,-1)[1] + Gammas(coefficients1[2]**2,R0s,w_diag23,+1)[1] #blue
     dephasing3=Gammas(coefficients1[1]**2,R0s,w_diag13,-1)[0] + Gammas(coefficients1[2]**2,R0s,w_diag23,+1)[0] #  green 
